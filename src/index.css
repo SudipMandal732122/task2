@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* Add custom font families */
+@theme {
+  --font-dm: "DM Sans", sans-serif;
+  --font-bricolage: "Bricolage Grotesque", sans-serif;
+}
+
+/* Default font for whole app */
+html {
+  font-family: var(--font-dm);
+  
+}
+
+/* Thin custom scrollbar */
+.thin-scrollbar {
+  scrollbar-width: thin;               /* Firefox */
+  scrollbar-color: hsl(243,23%,24%) transparent;  /* thumb color + track */
+}
+
+/* Chrome, Edge, Safari */
+.thin-scrollbar::-webkit-scrollbar {
+  width: 3px;   /* thickness */
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(243,23%,24%);   /* scrollbar color */
+  border-radius: 10px;
+  padding-left:4rem;
+}
+
