@@ -5,7 +5,7 @@ import { getWeatherIcon } from '../utils/weatherIcons';
 
 const CurrentWeatherCard = ({ cityName, dateStr, temperature, weatherCode }) => {
   return (
-    <div className=" bg-[url('./assets/bg-today-large.svg')] max-[375px]:bg-[url('./assets/bg-today-small.svg')] rounded-3xl max-[375px]:py-8 px-4 py-15 relative overflow-hidden ">
+    <div className=" bg-[url('/assets/bg-today-large.svg')] max-[375px]:bg-[url('/assets/bg-today-small.svg')] rounded-3xl max-[375px]:py-8 px-4 py-15 relative overflow-hidden ">
 
       <div className="flex items-center  justify-between max-[375px]:flex-col">
 
