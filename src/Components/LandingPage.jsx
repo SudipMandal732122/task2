@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { fetchWeather, getCityCoordinates } from '../utils/weatherApi';
+
+import {
+  fetchWeather,
+  getCityCoordinates,
+  fetchSuggestions,
+} from "../utils/weatherApi";
+
 import Header from './Header';
 import SettingsDropdown from './SettingsDropdown';
 import SearchBar from './SearchBar';
@@ -7,87 +13,153 @@ import CurrentWeatherCard from './CurrentWeatherCard';
 import WeatherDetailsGrid from './WeatherDetailsGrid';
 import DailyForecast from './DailyForecast';
 import HourlyForecast from './HourlyForecast';
-import LoadingScreen from './LoadingScreen';
 import ErrorScreen from './ErrorScreen';
+import WebLoader from './WebLoader';
+
+import { useQuery } from "@tanstack/react-query";
+
 
 function LandingPage() {
+
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const day = new Date();
-  const currentDay = days[day.getDay()];
+
+  const today = new Date();
+  const currentDay = days[today.getDay()];
+  
   const [searchQuery, setSearchQuery] = useState('');
-  const [cityName, setCityName] = useState('Berlin, Germany');
-  const [weatherData, setWeatherData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [coords, setCoords] = useState({
+    lat: 52.52,
+    lon: 13.41,
+    city: "Berlin, Germany",
+  });
+
+  const [units, setUnits] = useState({ 
+    temp: 'celsius', 
+    wind: 'km/h', 
+    precip: 'mm' 
+  });
+  
   const [showSettings, setShowSettings] = useState(false);
-  const [firstRender,setFirstrender]=useState(true);
-  const [units, setUnits] = useState({ temp: 'celsius', wind: 'km/h', precip: 'mm'  });
   const [selectedDay, setSelectedDay] = useState(currentDay);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(false);
+  const [noResult, setNoResult] = useState(false);
 
+
+
+  const { data: suggestions = [], refetch: refetchSuggestions } = useQuery({
+    queryKey: ["suggestions", searchQuery],
+    queryFn: () => fetchSuggestions(searchQuery),
+    enabled: false,
+  });
+  
   useEffect(() => {
-    loadWeather(52.52, 13.41, 'Berlin, Germany');
-    setFirstrender(!firstRender);
-  }, []);
+  if (!searchQuery.trim()) {
+    setShowSuggestions(false);
+    return;
+  }
 
-  const loadWeather = async (lat, lon, city) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await fetchWeather(lat, lon);
-      setWeatherData(data);
-      setCityName(city);
-    } catch (err) {
-      setError('Failed to load weather data');
-    } finally {
-      setLoading(false);
-    }
+  const timer = setTimeout(() => {
+    setShowSuggestions(true);
+    refetchSuggestions();
+  }, 450);
+
+  return () => clearTimeout(timer);
+}, [searchQuery]);
+  
+
+  const {
+    data: weatherData,
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ["weather", coords.lat, coords.lon],
+    queryFn: () => fetchWeather(coords.lat, coords.lon),
+    //  Auto refresh every 5 minutes
+    refetchInterval: 2 * 60 * 1000,
+
+    //  Refresh when browser becomes active
+    refetchOnWindowFocus: true,
+
+    //  Refresh if network reconnects
+    refetchOnReconnect: true,
+
+    // Retry on failure
+    retry: 1,
+  });
+
+  const onSelectSuggestion = (item) => {
+    const lat = item.latitude;
+    const lon = item.longitude;
+    const city = `${item.name}, ${item.country}`;
+
+    setCoords({ lat, lon, city });
+    setSearchQuery("");
+    setShowSuggestions(false);
   };
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
-    
+
+    setNoResult(false); // reset old message
+
     try {
-      setLoading(true);
-      setError(null);
-      const { latitude, longitude, name, country } = await getCityCoordinates(searchQuery);
-      await loadWeather(latitude, longitude, `${name}, ${country}`);
-      setSearchQuery('');
+      const { latitude, longitude, name, country } =
+        await getCityCoordinates(searchQuery);
+
+      setCoords({
+        lat: latitude,
+        lon: longitude,
+        city: `${name}, ${country}`,
+      });
+
+      setSearchQuery("");
     } catch (err) {
-      setError('No search result found!');
-      setLoading(false);
+      console.log("Search failed.");
+      setNoResult(true);       // <-- Show the message
+      setSearchQuery("");      //  clear input
     }
   };
 
-  const convertTemp = (temp) => {
-    if (units.temp === 'fahrenheit') {
-      return Math.round((temp * 9/5) + 32);
-    }
-    return Math.round(temp);
+  const convertTemp = (temp) =>
+    units.temp === "fahrenheit" ? Math.round(temp * 1.8 + 32) : Math.round(temp);
+
+  const convertWind = (speed) =>
+    units.wind === "mph" ? Math.round(speed * 0.621371) : Math.round(speed);
+
+  const convertPrecip = (val) =>
+    units.precip === "in" ? (val * 0.0393701).toFixed(2) : val;
+
+  const handleClickOutside = () => {
+    if (showSettings) setShowSettings(false);
+    if (openDropdown) setOpenDropdown(false);
   };
 
-  const convertWind = (speed) => {
-    if (units.wind === 'mph') {
-      return Math.round(speed * 0.621371);
-    }
-    return Math.round(speed);
-  };
 
-  const convertPrecip = (value) => {
-  if (units.precip === "in") {
-    return (value * 0.0393701).toFixed(2); // mm → inches
+  if (isLoading) {
+    return (
+      <WebLoader
+        props={{
+          setShowSettings,
+          showSettings,
+          units,
+          setUnits,
+          searchQuery,
+          setSearchQuery,
+          handleSearch,
+          error,
+        }}
+      />
+    );
   }
-  return value;
-};
 
 
-  if (loading && !weatherData) {
-    return  <LoadingScreen />;
-  }
 
-  if (error && !weatherData) {
+  if (error) {
     return(
-      <div className="min-h-screen bg-[hsl(243,96%,9%)] text-white  md:p-8" >
-      <div className="max-w-7xl min-[375px]:px-10 p-4  mx-auto" >
+      <div className="min-h-screen bg-[hsl(243,96%,9%)] text-white  md:p-6"  >
+      <div className="max-w-7xl min-[375px]:px-14 min-[375px]:pb-10 p-4  mx-auto" >
         <div className="relative">
             <Header onSettingsClick={() => setShowSettings(!showSettings)} />
 
@@ -97,7 +169,11 @@ function LandingPage() {
               isVisible={showSettings} 
             />
         </div>
-         <ErrorScreen onRetry={() => loadWeather(52.52, 13.41, 'Berlin, Germany')} showSettings={showSettings} setShowSettings={setShowSettings} />
+        <ErrorScreen 
+          onRetry={() => refetch()}
+          showSettings={showSettings} 
+          setShowSettings={setShowSettings} 
+        />
         </div>
         </div>
     );
@@ -105,7 +181,6 @@ function LandingPage() {
 
   if (!weatherData) return null;
 
-  const today = new Date();
   const dateStr = today.toLocaleDateString('en-US', { 
     weekday: 'long', 
     month: 'short', 
@@ -114,10 +189,15 @@ function LandingPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[hsl(243,96%,9%)] text-white  md:p-8" >
-      <div className="max-w-7xl min-[375px]:px-10 p-4  mx-auto" >
+    <div 
+      className="min-h-screen bg-[hsl(243,96%,9%)] text-white  md:p-6 "   onClick={handleClickOutside} 
+    >
+      <div className="max-w-7xl min-[375px]:px-14  min-[375px]:pb-10 max-[375px]:pb-10 p-4  mx-auto "  >
         <div className="relative">
-            <Header onSettingsClick={() => setShowSettings(!showSettings)} />
+            <Header 
+              showSettings={showSettings} 
+              onSettingsClick={() => setShowSettings(!showSettings)} 
+            />
 
             <SettingsDropdown 
               units={units} 
@@ -125,20 +205,29 @@ function LandingPage() {
               isVisible={showSettings} 
             />
         </div>
-        <SearchBar 
+       <SearchBar
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           onSearch={handleSearch}
-          error={error}
+          
+
+          suggestions={suggestions}
+          showSuggestions={showSuggestions}
+          setShowSuggestions={setShowSuggestions}
+          onSelectSuggestion={onSelectSuggestion}
         />
+        
 
         {
-            !firstRender && error ? <p className="text-white text-center text-lg font-semibold mt-2">{error}</p>
+           noResult ? 
+            <p className="text-white text-center text-lg font-semibold mt-6">
+              No search result found!
+            </p>
             :
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
                     <CurrentWeatherCard 
-                        cityName={cityName}
+                        cityName={coords.city}
                         dateStr={dateStr}
                         temperature={convertTemp(weatherData.current.temperature)}
                         weatherCode={weatherData.current.weather_code}
@@ -164,6 +253,8 @@ function LandingPage() {
                     convertTemp={convertTemp}
                     selectedDay={selectedDay}
                     setSelectedDay={setSelectedDay}
+                    openDropdown={openDropdown}
+                    setOpenDropdown={setOpenDropdown}
                 />
             </div>
            

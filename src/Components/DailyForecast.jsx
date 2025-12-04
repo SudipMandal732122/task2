@@ -5,10 +5,10 @@ const DailyForecast = ({ dailyData, convertTemp }) => {
   const getDayName = (date) => {
     return date.toLocaleDateString('en-US', { weekday: 'short' });
   };
-  console.log(dailyData.weather_code);
+  // console.log(dailyData.weather_code);
   return (
     <div>
-      <h3 className="text-xl font-semibold mb-4">Daily forecast</h3>
+      <h3 className="text-xl pt-2 font-semibold mb-4">Daily forecast</h3>
       <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {dailyData.time.map((date, idx) => (
           <div key={idx} className="bg-[hsl(243,27%,20%)] rounded-2xl p-4 text-center hover:bg-[hsl(243,23%,24%)] transition-colors">

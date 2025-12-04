@@ -16,7 +16,7 @@ export async function fetchWeatherApi(url, params) {
       })
     }),
     hourly: () => ({
-      time: () => data.hourly.time[0],
+      time: () => data.hourly.time,
       timeEnd: () => data.hourly.time[data.hourly.time.length - 1],
       interval: () => 3600,
       variables: (index) => ({
@@ -48,7 +48,7 @@ export async function fetchWeather(latitude = 25.01, longitude = 88.14) {
     hourly: ['temperature_2m', 'relative_humidity_2m', 'weather_code'],
     current: ['temperature_2m', 'relative_humidity_2m', 'is_day', 'weather_code', 
               'rain', 'snowfall', 'wind_speed_10m', 'precipitation', 'apparent_temperature'],
-    timezone: 'GMT',
+    timezone: "auto",
     timeformat: 'unixtime'
   };
 
@@ -63,6 +63,8 @@ export async function fetchWeather(latitude = 25.01, longitude = 88.14) {
 
 
   const data = {
+    lat: latitude,
+    lon: longitude,
     current: {
       time: new Date((Number(current.time()) + offset) * 1000),
       temperature: current.variables(0).value(),
@@ -75,16 +77,16 @@ export async function fetchWeather(latitude = 25.01, longitude = 88.14) {
       precipitation: current.variables(7).value(),
       feels_like: current.variables(8).value()
     },
+
     hourly: {
-      time: Array.from({ length: 24 }, (_, i) => 
-        new Date((Number(hourly.time()) + i * 3600 + offset) * 1000)
-      ),
+      time: hourly.time().map(t => new Date((t + offset) * 1000)),
       temp: hourly.variables(0).valuesArray(),
-      weather_code:  hourly.variables(1).valuesArray(),
+      weather_code: hourly.variables(2).valuesArray()
     },
-    daily: {
-      time: Array.from({ length: 7 }, (_, i) => 
-        new Date((Number(daily.time()) + i * 86400 + offset) * 1000)
+
+   daily: {
+      time: Array.from({ length: 7 }, (_, i) =>
+        new Date((Number(daily.time()) + i * 86400) * 1000) // 🟢 FIXED
       ),
       max: daily.variables(1).valuesArray(),
       min: daily.variables(2).valuesArray(),
@@ -92,7 +94,7 @@ export async function fetchWeather(latitude = 25.01, longitude = 88.14) {
       rain: daily.variables(4).valuesArray()
     }
   };
- 
+  // console.log(data);
   return data;
 }
 
@@ -109,4 +111,15 @@ export async function getCityCoordinates(city) {
 
   const { latitude, longitude, name, country } = data.results[0];
   return { latitude, longitude, name, country };
+}
+
+export async function fetchSuggestions(search) {
+  if (!search) return [];
+
+  const res = await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${search}&count=5&language=en&format=json`
+  );
+
+  const data = await res.json();
+  return data.results || [];
 }

@@ -5,15 +5,15 @@ import { getWeatherIcon } from '../utils/weatherIcons';
 
 const CurrentWeatherCard = ({ cityName, dateStr, temperature, weatherCode }) => {
   return (
-    <div className=" bg-[url('/assets/bg-today-large.svg')] max-[375px]:bg-[url('/assets/bg-today-small.svg')] rounded-3xl max-[375px]:py-8 px-4 py-15 relative overflow-hidden ">
+    <div className=" bg-[url('/assets/bg-today-large.svg')] max-[375px]:bg-[url('/assets/bg-today-small.svg')] rounded-xl max-[375px]:py-8 px-4 h-[16rem] content-center  max-[375px]:flex-col max-[375px]:justify-center  py-15 relative overflow-hidden ">
 
-      <div className="flex items-center  justify-between max-[375px]:flex-col">
+      <div className="flex items-center  justify-between max-[375px]:flex-col ">
 
-        <div className='flex flex-col  justify-center'>
-          <h3 className="text-2xl font-bold ">{cityName}</h3>
+        <div className='flex flex-col max-[375px]:items-center  justify-center'>
+          <h3 className="text-2xl max-[375px]:text-center font-bold ">{cityName}</h3>
           <p className="text-blue-200 max-[375px]:mt-2 max-[375px]:mb-4 max-[375px]:text-center">{dateStr}</p>
         </div>
-          { console.log(weatherCode)}
+          
         <div className="flex items-center max-[375px]:gap-20 gap-5">
           <div>
             {

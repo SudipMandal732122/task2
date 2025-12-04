@@ -1,54 +1,70 @@
-import React from 'react';
+import React  from 'react';
+import DayDropdown from './DayDropdown';
 import { getWeatherIcon } from '../utils/weatherIcons';
 
-const HourlyForecast = ({ hourlyData, convertTemp, selectedDay, setSelectedDay }) => {
-  // Helper to convert incoming time entries to Date objects safely
-  const toDate = (t) => (t instanceof Date ? t : new Date(t));
+const HourlyForecast = ({ hourlyData, convertTemp, selectedDay, setSelectedDay, openDropdown, setOpenDropdown }) => {
+
+  
+
+  // Convert entries to easier format
+  const entries = hourlyData.time.map((t, i) => ({
+    time: t instanceof Date ? t : new Date(t),
+    temp: hourlyData.temp[i],
+    code: hourlyData.weather_code[i],
+  }));
+
+  // Filter by selected day
+  const filteredHours = entries.filter(entry => {
+    const dayName = entry.time.toLocaleDateString("en-US", { weekday: "long" });
+    return dayName === selectedDay;
+  });
+
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
   return (
-    <div className="bg-[hsl(243,27%,20%)] rounded-3xl p-6 max-[375px]:p-4 ">
-      <div className="flex items-center justify-between max-[375px]:gap-2 max-[375px]:text-sm mb-6">
+    <div className=" bg-[hsl(243,27%,20%)]  rounded-3xl p-6 max-[375px]:p-4  ">
+      <div className=" relative flex items-center justify-between  max-[375px]:gap-2 max-[375px]:text-sm mb-6">
         <h3 className="text-xl font-bold">Hourly forecast</h3>
-        
-        <select
-          value={selectedDay}
-          onChange={(e) => setSelectedDay(e.target.value)}
-          className="bg-[hsl(243,23%,24%)] ps-3 pe-2 py-2 rounded-lg focus:outline-none cursor-pointer"
+        <button
+          onClick={() => setOpenDropdown((prev) => !prev)}
+          className="bg-[hsl(243,23%,24%)] px-3 py-2 rounded-lg cursor-pointer font-semibold hover:bg-[hsl(243,23%,30%)] flex gap-2 focus:outline-[0.1rem] focus:outline-offset-[0.2rem]"
         >
-          <option>Monday</option>
-          <option>Tuesday</option>
-          <option>Wednesday</option>
-          <option>Thursday</option>
-          <option>Friday</option>
-          <option>Saturday</option>
-          <option>Sunday</option>
-        </select>
+          <p>{selectedDay} </p>
+          <img className={`transition-transform duration-300 ${openDropdown ? "rotate-180" : "rotate-0"}`}
+          src="./assets/icon-dropdown.svg"/>
+        </button>
+         <DayDropdown
+          days={days}
+          selectedDay={selectedDay}
+          onSelect={(day) => {
+            setSelectedDay(day);
+            setOpenDropdown(false);
+          }}
+          isVisible={openDropdown}
+        />
       </div>
 
-      {/* note: hide-scrollbar class here */}
-      <div className="space-y-3 max-h-[600px] overflow-y-auto thin-scrollbar pr-4 -mr-6 max-[375px]:-mr-4">
-        {hourlyData.time.slice(0, 20).map((timeEntry, idx) => {
-          const time = toDate(timeEntry);
-          // safe indexing guards
-          const weatherCode = hourlyData.weather_code?.[idx];
-          const tempVal = hourlyData.temp?.[idx];
+      <div className="space-y-3 h-[30rem]  overflow-y-auto thin-scrollbar pr-4 -mr-6 max-[375px]:-mr-4">
+        {filteredHours.map((entry, idx) => (
+          <div
+            key={idx}
+            className="bg-[hsl(243,23%,24%)]  rounded-xl px-4 py-[0.7rem] flex items-center justify-between hover:bg-[hsl(243,23%,30%)] transition-colors"
+          >
+            <div className="flex items-center gap-3">
 
-          return (
-            <div
-              key={idx}
-              className="bg-[hsl(243,23%,24%)] rounded-xl p-4 flex items-center justify-between hover:bg-[hsl(243,23%,30%)] transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                
-                {getWeatherIcon(weatherCode, 20)}
-                <span>
-                  {time.getHours() % 12 || 12} {time.getHours() >= 12 ? 'PM' : 'AM'}
-                </span>
-              </div>
-              <span className="font-semibold">{tempVal != null ? convertTemp(tempVal) : '--'}°</span>
+              {getWeatherIcon(entry.code, 20)}
+
+              <span>
+                {entry.time.getHours() % 12 || 12}
+                {entry.time.getHours() >= 12 ? " PM" : " AM"}
+              </span>
             </div>
-          );
-        })}
+
+            <span className="font-semibold">
+              {convertTemp(entry.temp)}°
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
