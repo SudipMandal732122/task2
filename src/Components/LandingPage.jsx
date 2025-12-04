@@ -90,6 +90,7 @@ function LandingPage() {
   });
 
   const onSelectSuggestion = (item) => {
+    setNoResult(false);
     const lat = item.latitude;
     const lon = item.longitude;
     const city = `${item.name}, ${item.country}`;
@@ -97,6 +98,7 @@ function LandingPage() {
     setCoords({ lat, lon, city });
     setSearchQuery("");
     setShowSuggestions(false);
+   
   };
 
   const handleSearch = async () => {
