@@ -34,8 +34,8 @@ const LoadingScreen = () => {
             {/* DAILY FORECAST */}
             <div>
               <div className="w-32 h-5 text-gray-100 text-xl mb-6">Daily forecast</div>
-        
-              <div className="grid grid-cols-7 gap-3">
+      
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
                 {[1, 2, 3, 4, 5, 6, 7].map((i) => (
                   <div
                     key={i}
